@@ -89,6 +89,18 @@ enum CMDE {
 };
 volatile enum CMDE CMDE;
 
+enum PARK_STATE {
+			VEILLE,
+			AVANCER1,
+			MESURE,
+			ROT_GAUCHE,
+			AVANCER2,
+			ROT_DROITE,
+			AVANCER3,
+			ARRIVEE,
+};
+volatile enum PARK_STATE Park_state;
+
 enum MODE {
 	SLEEP, ACTIF, is_PARK, is_ATTENTE_PARK
 };
@@ -130,6 +142,7 @@ void SystemClock_Config(void);
 static void MX_NVIC_Init(void);
 /* USER CODE BEGIN PFP */
 void Gestion_Commandes(void);
+void Gestion_Park(void);
 void regulateur(void);
 void controle(void);
 void Calcul_Vit(void);
@@ -284,6 +297,63 @@ static void MX_NVIC_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+void Gestion_Park(void) {
+	enum PARK_STATE {
+			VEILLE,
+			AVANCER1,
+			MESURE,
+			ROT_GAUCHE,
+			AVANCER2,
+			ROT_DROITE,
+			AVANCER3,
+			ARRIVEE,
+		};
+		static enum PARK_STATE Park_state = VEILLE;
+
+	switch(Park_state) {
+	case VEILLE : {
+
+	}
+	case AVANCER1 : {
+		if (DistD > 1000)
+		{
+			_DirG = RECULE;
+			_DirD = RECULE;
+			_CVitG = 0;
+			_CVitD = 0;
+			//Etat = ARRET;
+			Mode = ACTIF;
+			Park_state = MESURE;
+		}
+		else {
+			_DirG = AVANCE;
+			_DirD = AVANCE;
+			_CVitG = V1;
+			_CVitD = V1;
+			//Etat = AV1;
+			Mode = ACTIF;
+		}
+	}
+	case MESURE : {
+
+	}
+	case ROT_GAUCHE : {
+
+		}
+	case AVANCER2 : {
+
+		}
+	case ROT_DROITE : {
+
+		}
+	case AVANCER3 : {
+
+		}
+	case ARRIVEE : {
+
+		}
+	}
+}
 void Gestion_Commandes(void) {
 	enum ETAT {
 		VEILLE,
@@ -836,11 +906,7 @@ if (New_CMDE) {
 		}
 		case PARK: {
 			Etat_Sonar = S_START; // launch SONAR acquisition
-			_DirG = AVANCE;
-			_DirD = RECULE;
-			_CVitG = V1;
-			_CVitD = V1;
-			Etat = DV1;
+			Park_state = AVANCER1;
 			Mode = ACTIF;
 			break;
 		}
@@ -1153,7 +1219,7 @@ uint32_t distance_moins_90;
 uint32_t distance_plus_90;
 
 void save_distance(uint32_t distance){
-	
+
 	switch ( Etat_Sonar ){
 		case S_MES_DEVANT:{
 			distance_devant = distance;
@@ -1176,6 +1242,12 @@ void save_distance(uint32_t distance){
 	}
 }
 
+void avancer_50(void)
+{
+
+}
+
+
 void start_sonar_mesure(){
 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_SET); // Start sonar mesure
 }
@@ -1184,10 +1256,10 @@ void Gestion_Sonar(){
 
 	switch( Etat_Sonar ){
 		case S_IDLE:{
-			
+
 			break;
 		}
-		
+
 		case S_START: {
 			__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_4, 900);
 			cpt_sonar = T_1_S;
@@ -1204,7 +1276,7 @@ void Gestion_Sonar(){
 			cpt_sonar = T_1_S; // if no result, start again one second after
 			break;
 		}
-		
+
 		case S_ROTATION_M_90: {
 			__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_4, 3200);
 			cpt_sonar = T_1_S;
@@ -1218,7 +1290,7 @@ void Gestion_Sonar(){
 			Etat_Sonar = S_MES_P_90;
 			break;
 		}
-	
+
 	}
 }
 
