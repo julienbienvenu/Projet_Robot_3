@@ -43,60 +43,6 @@ void HAL_ADC_LevelOutOfWindowCallback(ADC_HandleTypeDef* hadc)
 }
 /* USER CODE END PTD */
 
-/* Private define ------------------------------------------------------------*/
-/* USER CODE BEGIN PD */
-// Détection sonar
-int distance_sonar;
-void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
-{
-	if(htim->Channel == HAL_TIM_ACTIVE_CHANNEL_2)
-	{
-		distance_sonar = HAL_TIM_ReadCapturedValue(htim, TIM_CHANNEL_2);
-		//HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_RESET);
-	}
-}
-
-//Declaration sonar
-int angle = 0;
-int x = 0;
-int y = 0;
-int z = 0;
-
-void give_position(void)
-{
-	__HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_4, 3200); // left
-	x = distance_sonar;
-
-	__HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_4, 900);
-	y = distance_sonar;
-
-	__HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_4, 1800);
-	z = distance_sonar;
-}
-
-void rotation_sonar(void)
-{
-	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_SET);
-	switch (angle) {
-		case -90: { //is right
-			__HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_4, 3200); // left
-			angle = 0;
-			break;
-		}
-		case 0: { // is left
-			__HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_4, 900); //middle
-			angle = 90;
-			break;
-		}
-		case 90: { // is middle
-			__HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_4, 1800); //right
-			angle = -90;
-			break;
-		}
-		default :
-			angle = -90;
-	}
-}
 
 /* USER CODE END PD */
 
@@ -121,6 +67,7 @@ void rotation_sonar(void)
 #define Vmax 95
 #define T_2_S 1000 //( pwm période = 2 ms )
 #define T_200_MS 100
+#define T_1_S 500
 #define T_2000_MS 1000
 #define CKp_D 100  //80 Robot1
 #define CKp_G 100  //80 Robot1
@@ -141,10 +88,15 @@ enum CMDE {
 	ATTENTE_PARK
 };
 volatile enum CMDE CMDE;
+
 enum MODE {
 	SLEEP, ACTIF, is_PARK, is_ATTENTE_PARK
 };
 volatile enum MODE Mode;
+
+enum ETAT_SONAR {S_IDLE, S_START, S_MES_DEVANT, S_ROTATION_M_90, S_MES_M_90, S_ROTATION_P_90, S_MES_P_90}; // Mesure + 90
+enum ETAT_SONAR Etat_Sonar = S_IDLE;
+
 volatile unsigned char New_CMDE = 0;
 volatile uint16_t Dist_ACS_1, Dist_ACS_2, Dist_ACS_3, Dist_ACS_4;
 volatile unsigned int Time = 0;
@@ -235,7 +187,6 @@ int main(void)
 	CMDE = STOP;
 	New_CMDE = 1;
 
-	HAL_TIM_Base_Start_IT(&htim1);
 	HAL_TIM_Base_Start_IT(&htim2);  // Start IT sur font montant PWM
 
 	HAL_TIM_Encoder_Start(&htim3, TIM_CHANNEL_ALL);
@@ -243,6 +194,7 @@ int main(void)
 
 	HAL_UART_Receive_IT(&huart3, &BLUE_RX, 1);
 
+	HAL_TIM_Base_Start_IT(&htim1);
 	HAL_TIM_IC_Start(&htim1, TIM_CHANNEL_1);
 	HAL_TIM_IC_Start(&htim1, TIM_CHANNEL_2);
 	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_4); // Start PWM servo
@@ -883,8 +835,7 @@ if (New_CMDE) {
 
 		}
 		case PARK: {
-
-			give_position();
+			Etat_Sonar = S_START; // launch SONAR acquisition
 			_DirG = AVANCE;
 			_DirD = RECULE;
 			_CVitG = V1;
@@ -894,7 +845,7 @@ if (New_CMDE) {
 			break;
 		}
 		case ATTENTE_PARK: {
-			give_position();
+			Etat_Sonar = S_START; // launch SONAR acquisition
 			_DirG = AVANCE;
 			_DirD = RECULE;
 			_CVitG = V1;
@@ -1158,6 +1109,10 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 			CMDE = ATTENTE_PARK;
 			break;
 		}
+		case 'V':{
+			Etat_Sonar = S_START;
+			break;
+		}
 		default:
 			New_CMDE = 1;
 		}
@@ -1176,8 +1131,97 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc) {
 	HAL_ADC_Stop_DMA(hadc);
 }
 
-static unsigned char cpt_sonar = 0;
-static unsigned char cpt = 0;
+
+/* Private define ------------------------------------------------------------*/
+/* USER CODE BEGIN PD */
+// Détection sonar
+void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
+{
+	if(htim->Channel == HAL_TIM_ACTIVE_CHANNEL_2)
+	{
+		uint32_t distance = HAL_TIM_ReadCapturedValue(htim, TIM_CHANNEL_2);
+		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_RESET);
+		save_distance(distance);
+	}
+}
+
+volatile unsigned int cpt = 0;
+volatile unsigned int cpt_sonar = 0;
+
+uint32_t distance_devant;
+uint32_t distance_moins_90;
+uint32_t distance_plus_90;
+
+void save_distance(uint32_t distance){
+	
+	switch ( Etat_Sonar ){
+		case S_MES_DEVANT:{
+			distance_devant = distance;
+			Etat_Sonar = S_ROTATION_M_90;
+			cpt_sonar = 0;
+			break;
+		}
+		case S_MES_M_90:{
+			distance_moins_90 = distance;
+			Etat_Sonar = S_ROTATION_P_90;
+			cpt_sonar = 0;
+			break;
+		}
+		case S_MES_P_90:{
+			distance_plus_90 = distance;
+			Etat_Sonar = S_IDLE;
+			cpt_sonar = 0;
+			break;
+		}
+	}
+}
+
+void start_sonar_mesure(){
+	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_SET); // Start sonar mesure
+}
+
+void Gestion_Sonar(){
+
+	switch( Etat_Sonar ){
+		case S_IDLE:{
+			
+			break;
+		}
+		
+		case S_START: {
+			__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_4, 900);
+			cpt_sonar = T_1_S;
+			Etat_Sonar = S_MES_DEVANT;
+			break;
+		}
+
+		// start measure
+		case S_MES_DEVANT:
+		case S_MES_M_90:
+		case S_MES_P_90:
+		{
+			start_sonar_mesure();
+			cpt_sonar = T_1_S; // if no result, start again one second after
+			break;
+		}
+		
+		case S_ROTATION_M_90: {
+			__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_4, 3200);
+			cpt_sonar = T_1_S;
+			Etat_Sonar = S_MES_M_90;
+			break;
+		}
+
+		case S_ROTATION_P_90: {
+			__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_4, 1800);
+			cpt_sonar = T_1_S;
+			Etat_Sonar = S_MES_P_90;
+			break;
+		}
+	
+	}
+}
+
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef * htim) {
 
 	if ( htim->Instance == TIM2) {
@@ -1212,14 +1256,10 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef * htim) {
 			cpt = 0;
 		}
 
-		//Fonction sonar
-		if(cpt_sonar<1000)
-		{
-			cpt_sonar++;
-		}
-		else{
-			rotation_sonar();
-			cpt_sonar=0;
+		if(cpt_sonar > 0){ // temporisation Sonar
+			cpt_sonar--;
+		}else{
+			Gestion_Sonar();
 		}
 	}
 }
