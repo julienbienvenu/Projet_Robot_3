@@ -231,6 +231,7 @@ int main(void)
 	  //HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_SET);
 	  Gestion_Commandes();
 	  controle();
+	  Gestion_Park();
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -315,6 +316,7 @@ void Gestion_Park(void) {
 
 	}
 	case AVANCER1 : {
+		HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
 		if (DistD > 1000)
 		{
 			_DirG = RECULE;
@@ -912,11 +914,7 @@ if (New_CMDE) {
 		}
 		case ATTENTE_PARK: {
 			Etat_Sonar = S_START; // launch SONAR acquisition
-			_DirG = AVANCE;
-			_DirD = RECULE;
-			_CVitG = V1;
-			_CVitD = V1;
-			Etat = DV1;
+			Park_state = AVANCER1;
 			Mode = ACTIF;
 			break;
 		}
@@ -1241,12 +1239,6 @@ void save_distance(uint32_t distance){
 		}
 	}
 }
-
-void avancer_50(void)
-{
-
-}
-
 
 void start_sonar_mesure(){
 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_SET); // Start sonar mesure
