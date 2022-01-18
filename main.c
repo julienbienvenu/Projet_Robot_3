@@ -90,16 +90,18 @@ enum CMDE {
 volatile enum CMDE CMDE;
 
 enum PARK_STATE {
-			VEILLE,
-			AVANCER1,
-			MESURE,
-			ROT_GAUCHE,
-			AVANCER2,
-			ROT_DROITE,
-			AVANCER3,
-			ARRIVEE,
+	VEILLE,
+	PARK_START,
+	AVANCER1,
+	MESURE,
+	ATTENTE_MESURE,
+	ROT_GAUCHE,
+	AVANCER2,
+	ROT_DROITE,
+	AVANCER3,
+	ARRIVEE
 };
-volatile enum PARK_STATE Park_state;
+enum PARK_STATE Park_state = VEILLE ;
 
 enum MODE {
 	SLEEP, ACTIF, is_PARK, is_ATTENTE_PARK
@@ -133,6 +135,13 @@ uint32_t Dist_Obst_cm;
 uint32_t Dist;
 uint8_t UNE_FOIS = 1;
 uint32_t OV = 0;
+
+uint32_t distance_devant;
+uint32_t distance_moins_90;
+uint32_t distance_plus_90;
+
+volatile unsigned int cpt = 0;
+volatile unsigned int cpt_sonar = 0;
 
 
 /* USER CODE END PV */
@@ -299,26 +308,22 @@ static void MX_NVIC_Init(void)
 
 /* USER CODE BEGIN 4 */
 void Gestion_Park(void) {
-	enum PARK_STATE {
-			VEILLE,
-			AVANCER1,
-			MESURE,
-			ROT_GAUCHE,
-			AVANCER2,
-			ROT_DROITE,
-			AVANCER3,
-			ARRIVEE,
-		};
-		static enum PARK_STATE Park_state = VEILLE;
+	//static enum PARK_STATE Park_state = VEILLE;
 
 	switch(Park_state) {
 	case VEILLE : {
-
+		break;
+	}
+	case PARK_START : {
+		DistD = 0;
+		DistG = 0;
+		Park_state = AVANCER1;
+		break;
 	}
 	case AVANCER1 : {
-		HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
 		if (DistD > 1000)
 		{
+			HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
 			_DirG = RECULE;
 			_DirD = RECULE;
 			_CVitG = 0;
@@ -328,6 +333,7 @@ void Gestion_Park(void) {
 			Park_state = MESURE;
 		}
 		else {
+			HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
 			_DirG = AVANCE;
 			_DirD = AVANCE;
 			_CVitG = V1;
@@ -335,23 +341,33 @@ void Gestion_Park(void) {
 			//Etat = AV1;
 			Mode = ACTIF;
 		}
+		break;
 	}
 	case MESURE : {
-
+		Etat_Sonar = S_START;
+		Park_state = ATTENTE_MESURE;
+		break;
+	}
+	case ATTENTE_MESURE : {
+		break;
 	}
 	case ROT_GAUCHE : {
-
+		break;
 		}
 	case AVANCER2 : {
+		break;
 
 		}
 	case ROT_DROITE : {
+		break;
 
 		}
 	case AVANCER3 : {
+		break;
 
 		}
 	case ARRIVEE : {
+		break;
 
 		}
 	}
@@ -907,14 +923,12 @@ if (New_CMDE) {
 
 		}
 		case PARK: {
-			Etat_Sonar = S_START; // launch SONAR acquisition
-			Park_state = AVANCER1;
+			Park_state = PARK_START;
 			Mode = ACTIF;
 			break;
 		}
 		case ATTENTE_PARK: {
-			Etat_Sonar = S_START; // launch SONAR acquisition
-			Park_state = AVANCER1;
+			Park_state = PARK_START;
 			Mode = ACTIF;
 			break;
 		}
@@ -1167,14 +1181,17 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 		}
 		case 'W':{
 			CMDE = PARK;
+			New_CMDE = 1;
 			break;
 		}
 		case 'X':{
 			CMDE = ATTENTE_PARK;
+			New_CMDE = 1;
 			break;
 		}
 		case 'V':{
 			Etat_Sonar = S_START;
+			New_CMDE = 1;
 			break;
 		}
 		default:
@@ -1198,24 +1215,6 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc) {
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-// Détection sonar
-void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
-{
-	if(htim->Channel == HAL_TIM_ACTIVE_CHANNEL_2)
-	{
-		uint32_t distance = HAL_TIM_ReadCapturedValue(htim, TIM_CHANNEL_2);
-		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_RESET);
-		save_distance(distance);
-	}
-}
-
-volatile unsigned int cpt = 0;
-volatile unsigned int cpt_sonar = 0;
-
-uint32_t distance_devant;
-uint32_t distance_moins_90;
-uint32_t distance_plus_90;
-
 void save_distance(uint32_t distance){
 
 	switch ( Etat_Sonar ){
@@ -1237,6 +1236,17 @@ void save_distance(uint32_t distance){
 			cpt_sonar = 0;
 			break;
 		}
+	}
+}
+
+// Détection sonar
+void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
+{
+	if(htim->Channel == HAL_TIM_ACTIVE_CHANNEL_2)
+	{
+		uint32_t distance = HAL_TIM_ReadCapturedValue(htim, TIM_CHANNEL_2);
+		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_RESET);
+		save_distance(distance);
 	}
 }
 
