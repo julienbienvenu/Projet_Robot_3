@@ -317,12 +317,22 @@ int main(void) {
 	/* USER CODE END 2 */
 
 	/* Infinite loop */
+<<<<<<< Updated upstream
 	/* USER CODE BEGIN WHILE
 	 */
 
 	// Reset position sonar
 	__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_4,
 						  3000); // middle
+=======
+	/* USER CODE BEGIN WHILE */
+	while (1) {
+		Gestion_Commandes();
+		controle();
+		Gestion_Park();
+		Gestion_Zigbee();
+		/* USER CODE END WHILE */
+>>>>>>> Stashed changes
 
 	while (1) {
 		// HAL_GPIO_WritePin(GPIOB,
@@ -1535,7 +1545,15 @@ void Gestion_Sonar() {
 	}
 }
 
+<<<<<<< Updated upstream
 void Gestion_Zigbee(void) {
+=======
+uint8_t z_tempo;
+
+// fromUARTINterrupt : 1 -> from UART / 0 -> from Main
+
+void Gestion_Zigbee(int fromUARTInterrupt) {
+>>>>>>> Stashed changes
 	switch (Zigbee) {
 		case z_SLEEP : {
 			// finish sequence Zigbee
@@ -1553,10 +1571,22 @@ void Gestion_Zigbee(void) {
 			Zigbee = z_TRANSMIT_ID;
 			break;
 		}
+<<<<<<< Updated upstream
 		case z_REQUEST_ID : {
 			// emission pour envoyer une demande Zigbee
 			Zigbee = z_LISTEN_ID;
 			break;
+=======
+		break;
+	}
+
+	case z_LISTEN_POS_z: {
+		if (fromUARTInterrupt) {
+			z_recieved_distance_z = XBEE_RX;
+
+			// change park state
+			Park_state = PARK_START;
+>>>>>>> Stashed changes
 		}
 		case z_TRANSMIT_ID : {
 
