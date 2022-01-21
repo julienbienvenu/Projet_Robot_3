@@ -126,11 +126,14 @@ volatile enum MODE Mode;
 enum ZIGBEE {
 	z_SLEEP,
 	z_LISTEN_ID,
-	z_LISTEN_POS,
+	z_LISTEN_POS_x,
+	z_LISTEN_POS_y,
+	z_LISTEN_POS_z,
 	z_LISTEN_REQUEST_ID,
 	z_REQUEST_ID,
 	z_TRANSMIT_ID,
-	z_TRANSMIT_POS,
+	z_TRANSMIT_POS
+
 };
 volatile enum ZIGBEE Zigbee;
 
@@ -154,8 +157,20 @@ uint16_t adc_buffer[10]; // modification
 						 // 10
 uint16_t Buff_Dist[8];
 uint8_t BLUE_RX;
-uint8_t XBEE_RX;
 
+
+// xbee
+uint8_t XBEE_RX;
+uint8_t z_robotID = 0x5C; // the ID of the actual robot
+
+// xbee reception values
+uint8_t z_recieved_id;
+uint8_t z_recieved_distance_x;
+uint8_t z_recieved_distance_y;
+uint8_t z_recieved_distance_z;
+
+
+// robot state
 uint16_t _DirG, _DirD, CVitG, CVitD, DirD, DirG;
 uint16_t _CVitD = 0;
 uint16_t _CVitG = 0;
@@ -189,16 +204,16 @@ static void MX_NVIC_Init(void);
 /* USER CODE BEGIN PFP */
 void Gestion_Commandes(void);
 void Gestion_Park(void);
-void Gestion_Zigbee(void);
+
 void regulateur(void);
 void controle(void);
 void Calcul_Vit(void);
 void ACS(void);
 
 // ZIGBEE
-void sendData(uint8_t* data, int size);
-void sendPosition();
-void Gestion_Zigbee(void);
+void z_sendData(uint8_t* data, int size);
+void z_sendPosition();
+void Gestion_Zigbee(bool fromUARTInterrupt);
 
 /* USER CODE END PFP */
 
@@ -331,7 +346,7 @@ int main(void) {
 		Gestion_Commandes();
 		controle();
 		Gestion_Park();
-		Gestion_Zigbee();
+		Gestion_Zigbee(false);
 		/* USER CODE END WHILE
 		 */
 
@@ -566,7 +581,7 @@ void Gestion_Park(void) {
 					incr = 0;
 					action = 0;
 					Zigbee = z_REQUEST_ID;
-					Park_state = ARRIVEE; //aller au case suivant
+					Park_state = ARRIVEE; // aller au case suivant
 				}
 			} else {
 				if (action == 0) {
@@ -1374,6 +1389,7 @@ void regulateur(void) {
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef* huart) {
 	if (huart->Instance == USART1) {
 		// just recieved XBEE message
+		Gestion_Zigbee(true); // save data
 		HAL_UART_Receive_IT(&huart1, &XBEE_RX, 1);
 	} else if (huart->Instance == USART3) {
 
@@ -1535,50 +1551,79 @@ void Gestion_Sonar() {
 	}
 }
 
-void Gestion_Zigbee(void) {
+void Gestion_Zigbee(bool fromUARTInterrupt) {
 	switch (Zigbee) {
-		case z_SLEEP : {
-			// finish sequence Zigbee
-			break;
-		}
-		case z_LISTEN_ID : { // Waiting for requesting ID order
+	case z_SLEEP: {
+		// finish sequence Zigbee
+		break;
+	}
+	case z_LISTEN_ID: { // Waiting for requesting ID order
+		if (fromUARTInterrupt) {
+			z_recieved_id = XBEE_RX;
+			// TODO : add alea
 			Zigbee = z_TRANSMIT_POS;
-			break;
 		}
-		case z_LISTEN_POS : {
-			Park_state = PARK_START; // démarrer sequence de parking
-			break;
-		}
-		case z_LISTEN_REQUEST_ID : {
-			Zigbee = z_TRANSMIT_ID;
-			break;
-		}
-		case z_REQUEST_ID : {
-			// emission pour envoyer une demande Zigbee
-			Zigbee = z_LISTEN_ID;
-			break;
-		}
-		case z_TRANSMIT_ID : {
+		break;
+	}
 
-			Zigbee = z_LISTEN_POS; // on listen pour avoir pos
-			break;
+	case z_LISTEN_POS_x: {
+		if (fromUARTInterrupt) {
+			z_recieved_distance_x = XBEE_RX;
+			Zigbee = z_LISTEN_POS_y;
 		}
-		case z_TRANSMIT_POS : {
+		break;
+	}
 
-			Zigbee = z_SLEEP; // fin séquence Zigbee
-			break;
+	case z_LISTEN_POS_y: {
+		if (fromUARTInterrupt) {
+			z_recieved_distance_y = XBEE_RX;
+			Zigbee = z_LISTEN_POS_z;
 		}
+		break;
+	}
+	case z_LISTEN_POS_z: {
+		if (fromUARTInterrupt) {
+			z_recieved_distance_z = XBEE_RX;
+
+			// chanhge park state
+			Park_state = PARK_START;
+		}
+		break;
+	}
+
+	case z_LISTEN_REQUEST_ID: {
+		Zigbee = z_TRANSMIT_ID;
+		break;
+	}
+	case z_REQUEST_ID: {
+		// emission pour envoyer une demande Zigbee
+		Zigbee = z_LISTEN_ID;
+		break;
+	}
+	case z_TRANSMIT_ID: {
+		sendID;
+		Zigbee = z_LISTEN_POS_x; // on listen pour avoir pos
+		break;
+	}
+
+
+	case z_TRANSMIT_POS: {
+		z_sendPosition();
+		Zigbee = z_SLEEP; // fin séquence Zigbee
+		break;
+	}
 	}
 }
 
-void sendData(uint8_t* data, int size) {
+void z_sendData(uint8_t* data, int size) {
 	HAL_UART_Transmit(&huart1, data, size, 1E6); // timeout 1s => 1Mhz
 }
 
-void sendPosition() {
+void z_sendPosition() {
 	uint8_t data[3] = {distance_devant, distance_plus_90, distance_moins_90};
-	sendData(data, 3);
+	z_sendData(data, 3);
 }
+void z_sendID() { z_sendData(z_robotID, 1); }
 
 int distance_actuel; // sonar
 
