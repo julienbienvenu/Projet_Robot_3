@@ -490,7 +490,7 @@ void Gestion_Park(void) {
 					Mode = ACTIF;
 					incr = 0;
 					action = 0;
-					Zigbee = REQUEST_ID;
+					Zigbee = z_REQUEST_ID;
 					Park_state = ARRIVEE; //aller au case suivant
 				}
 			}
