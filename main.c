@@ -160,7 +160,8 @@ uint8_t XBEE_RX[5];		  // les trames ZIGBEE sont en 5 bits
 uint8_t z_robotID = 0x5C; // the ID of the actual robot
 uint8_t z_tempo;	  // the actual temporisation before sending the robot ID
 #define MAX_RAND 1000 // max tempo: 2 seconds
-#define z_pos_increment 50 // the value by wich each robot should be espaced
+#define z_pos_increment                                                        \
+	50 // the value by wich each robot should be espaced // TODO : set me
 
 // xbee reception values
 uint8_t z_recieved_id;
