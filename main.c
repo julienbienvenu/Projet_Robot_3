@@ -95,8 +95,6 @@ void HAL_ADC_LevelOutOfWindowCallback(ADC_HandleTypeDef* hadc) {
 #define CKd_G 0
 #define DELTA 0x50
 
-#define MAX_RAND 1000 // 2 secondes
-
 enum CMDE { START, STOP, AVANT, ARRIERE, DROITE, GAUCHE, PARK, ATTENTE_PARK };
 volatile enum CMDE CMDE;
 
@@ -163,6 +161,8 @@ uint8_t BLUE_RX;
 // xbee
 uint8_t XBEE_RX;
 uint8_t z_robotID = 0x5C; // the ID of the actual robot
+uint8_t z_tempo; // the actual temporisation before sending the robot ID
+#define MAX_RAND 1000 // max tempo: 2 seconds
 
 // xbee reception values
 uint8_t z_recieved_id;
@@ -1513,8 +1513,6 @@ void Gestion_Sonar() {
 	}
 	}
 }
-
-void uint8_t z_tempo;
 
 void Gestion_Zigbee(int fromUARTInterrupt) {
 	switch (Zigbee) {
