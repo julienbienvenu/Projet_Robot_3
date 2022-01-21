@@ -95,6 +95,8 @@ void HAL_ADC_LevelOutOfWindowCallback(ADC_HandleTypeDef* hadc) {
 #define CKd_G 0
 #define DELTA 0x50
 
+#define MAX_RAND 1000 // 2 secondes
+
 enum CMDE { START, STOP, AVANT, ARRIERE, DROITE, GAUCHE, PARK, ATTENTE_PARK };
 volatile enum CMDE CMDE;
 
@@ -168,6 +170,8 @@ uint8_t z_recieved_distance_x;
 uint8_t z_recieved_distance_y;
 uint8_t z_recieved_distance_z;
 
+// xbee commands
+#define z_cmd_demande_id 0x1
 
 // robot state
 uint16_t _DirG, _DirD, CVitG, CVitD, DirD, DirG;
@@ -1521,8 +1525,13 @@ void Gestion_Zigbee(int fromUARTInterrupt) {
 	case z_LISTEN_ID: { // Waiting for requesting ID order
 		if (fromUARTInterrupt) {
 			z_recieved_id = XBEE_RX;
-			// TODO : add alea
-			Zigbee = z_TRANSMIT_POS;
+			if (z_recieved_id == z_robotID) {
+				// our robot was choosen
+				Zigbee = z_TRANSMIT_POS;
+			} else {
+				// else we return listening for request id
+				Zigbee = z_TRANSMIT_ID;
+			}
 		}
 		break;
 	}
@@ -1554,7 +1563,14 @@ void Gestion_Zigbee(int fromUARTInterrupt) {
 	}
 
 	case z_LISTEN_REQUEST_ID: {
-		Zigbee = z_TRANSMIT_ID;
+
+		if (fromUARTInterrupt) { // we recieved
+			// check  if the parameter recieved was a id request
+			if (XBEE_RX == z_cmd_demande_id) {
+				z_tempo = rand() % MAX_RAND;
+				Zigbee = z_TRANSMIT_ID_tempo;
+			}
+		}
 		break;
 	}
 
