@@ -1455,18 +1455,11 @@ void Gestion_Sonar(){
 void Gestion_Zigbee(void) {
 	switch (Zigbee) {
 		case z_SLEEP : {
-<<<<<<< Updated upstream
-			break;
-		}
-		case z_LISTEN_ID : {
-			Zigbee = TRANSMIT_ID;
-=======
 			// finish sequence Zigbee
 			break;
 		}
 		case z_LISTEN_ID : { // Waiting for requesting ID order
 			Zigbee = z_TRANSMIT_POS;
->>>>>>> Stashed changes
 			break;
 		}
 		case z_LISTEN_POS : {
@@ -1474,37 +1467,22 @@ void Gestion_Zigbee(void) {
 			break;
 		}
 		case z_LISTEN_REQUEST_ID : {
-<<<<<<< Updated upstream
-=======
 			Zigbee = z_TRANSMIT_ID;
->>>>>>> Stashed changes
 			break;
 		}
 		case z_REQUEST_ID : {
 			// emission pour envoyer une demande Zigbee
-<<<<<<< Updated upstream
-			Zigbee = z_TRANSMIT_ID;
-=======
 			Zigbee = z_LISTEN_ID;
->>>>>>> Stashed changes
 			break;
 		}
 		case z_TRANSMIT_ID : {
 
-<<<<<<< Updated upstream
-			Zigbee = LISTEN; // on listen pour avoir pos
-=======
 			Zigbee = z_LISTEN_POS; // on listen pour avoir pos
->>>>>>> Stashed changes
 			break;
 		}
 		case z_TRANSMIT_POS : {
 
-<<<<<<< Updated upstream
-			Zigbee = SLEEP; // fin séquence Zigbee
-=======
 			Zigbee = z_SLEEP; // fin séquence Zigbee
->>>>>>> Stashed changes
 			break;
 		}
 	}
