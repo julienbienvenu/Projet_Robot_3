@@ -193,6 +193,12 @@ void regulateur(void);
 void controle(void);
 void Calcul_Vit(void);
 void ACS(void);
+
+// ZIGBEE
+void sendData(uint8_t* data, int size);
+void sendPosition();
+void Gestion_Zigbee(void);
+
 /* USER CODE END PFP */
 
 /* Private user code
@@ -1566,6 +1572,15 @@ void Gestion_Zigbee(void) {
 		break;
 	}
 	}
+}
+
+void sendData(uint8_t* data, int size) {
+	HAL_UART_Transmit(&huart1, data, size, 1E6); // timeout 1s => 1Mhz
+}
+
+void sendPosition() {
+	uint8_t data[3] = {distance_devant, distance_plus_90, distance_moins_90};
+	sendData(data, 3);
 }
 
 int distance_actuel; // sonar
