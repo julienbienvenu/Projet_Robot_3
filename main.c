@@ -1285,7 +1285,7 @@ void regulateur(void) {
 
 	switch (Etat) {
 	case ARRET: {
-		if (Mode == ACTIF || Mode == isMesure)
+		if (Mode == ACTIF || Mode == isMesure || Mode == is_ATTENTE_PARK || Mode == is_PARK)
 			Etat = ACTIF;
 		else {
 			__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_4, 0);
