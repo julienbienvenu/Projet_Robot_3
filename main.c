@@ -110,7 +110,9 @@ volatile enum MODE Mode;
 
 enum ZIGBEE {
 	z_SLEEP,
-	z_LISTEN,
+	z_LISTEN_ID,
+	z_LISTEN_POS,
+	z_LISTEN_REQUEST_ID,
 	z_REQUEST_ID,
 	z_TRANSMIT_ID,
 	z_TRANSMIT_POS,
@@ -1070,7 +1072,7 @@ if (New_CMDE) {
 		}
 		case ATTENTE_PARK: {
 			Park_state = PARK_START;
-			Zigbee = z_LISTEN;
+			Zigbee = z_LISTEN_REQUEST_ID;
 			Mode = ACTIF;
 			break;
 		}
@@ -1455,24 +1457,20 @@ void Gestion_Zigbee(void) {
 		case z_SLEEP : {
 			break;
 		}
-		case z_LISTEN : {
-			if () // on recupere ID du robot Park
-			{
-
-				Zigbee = TRANSMIT_ID;
-			}
-			else if () // on récupère une position
-			{
-				Park_state = PARK_START; // démarrer sequence de parking
-			}
-			else if () // request id
-			{
-				Park_state = TRANSMIT_ID;
-			}
+		case z_LISTEN_ID : {
+			Zigbee = TRANSMIT_ID;
+			break;
+		}
+		case z_LISTEN_POS : {
+			Park_state = PARK_START; // démarrer sequence de parking
+			break;
+		}
+		case z_LISTEN_REQUEST_ID : {
 			break;
 		}
 		case z_REQUEST_ID : {
 			// emission pour envoyer une demande Zigbee
+			Zigbee = z_TRANSMIT_ID;
 			break;
 		}
 		case z_TRANSMIT_ID : {
