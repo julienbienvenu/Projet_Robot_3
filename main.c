@@ -154,6 +154,7 @@ uint16_t adc_buffer[10]; // modification
 						 // 10
 uint16_t Buff_Dist[8];
 uint8_t BLUE_RX;
+uint8_t XBEE_RX;
 
 uint16_t _DirG, _DirD, CVitG, CVitD, DirD, DirG;
 uint16_t _CVitD = 0;
@@ -250,7 +251,10 @@ int main(void) {
 	MX_TIM2_Init();
 	MX_TIM3_Init();
 	MX_TIM4_Init();
+
+	MX_USART1_UART_Init();
 	MX_USART3_UART_Init();
+
 	MX_TIM1_Init();
 
 	/* Initialize interrupts
@@ -283,6 +287,7 @@ int main(void) {
 	HAL_TIM_Encoder_Start(&htim3, TIM_CHANNEL_ALL);
 	HAL_TIM_Encoder_Start(&htim4, TIM_CHANNEL_ALL);
 
+	HAL_UART_Receive_IT(&huart1, &XBEE_RX, 1);
 	HAL_UART_Receive_IT(&huart3, &BLUE_RX, 1);
 
 	HAL_TIM_Base_Start_IT(&htim1);
@@ -1367,7 +1372,10 @@ void regulateur(void) {
 }
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef* huart) {
-	if (huart->Instance == USART3) {
+	if (huart->Instance == USART1) {
+		// just recieved XBEE message
+		HAL_UART_Receive_IT(&huart1, &XBEE_RX, 1);
+	} else if (huart->Instance == USART3) {
 
 		// W -> PARK
 		// X -> Attente_Park
