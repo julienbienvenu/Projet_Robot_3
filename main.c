@@ -160,9 +160,12 @@ uint8_t XBEE_RX[5];		  // les trames ZIGBEE sont en 5 bits
 uint8_t z_robotID = 0x5C; // the ID of the actual robot
 uint8_t z_tempo;	  // the actual temporisation before sending the robot ID
 #define MAX_RAND 1000 // max tempo: 2 seconds
+#define z_pos_increment 50 // the value by wich each robot should be espaced
 
 // xbee reception values
 uint8_t z_recieved_id;
+int position_has_been_received =
+	0; // we should use the distance_devant ... values
 uint8_t z_recieved_distance_x;
 uint8_t z_recieved_distance_y;
 uint8_t z_recieved_distance_z;
@@ -406,6 +409,8 @@ void Gestion_Park(void) {
 		val_distd = DistD;
 		sonar_acquisition = 1;
 		Park_state = AVANCER1;
+
+		Zigbee = z_MOVING; // turn the Zigbee communication in pause
 
 		break;
 	}
@@ -1125,15 +1130,13 @@ void Gestion_Commandes(void) {
 			break;
 		}
 		case PARK: {
-			Park_state = PARK_START;
 			Etat_Sonar = S_START;
 			Zigbee = z_REQUEST_ID;
 			Mode = ACTIF;
 			break;
 		}
 		case ATTENTE_PARK: {
-			Park_state = PARK_START;
-			Zigbee = z_LISTEN_REQUEST_ID;
+			Zigbee = z_LISTEN_CMD;
 			Mode = ACTIF;
 			break;
 		}
@@ -1546,6 +1549,7 @@ void Gestion_Zigbee(int fromUARTInterrupt) {
 				z_recieved_distance_x = XBEE_RX[2];
 				z_recieved_distance_y = XBEE_RX[3];
 				z_recieved_distance_z = XBEE_RX[4];
+				position_has_been_received = 1; // set the position source
 			}
 		}
 	}
@@ -1567,20 +1571,6 @@ void Gestion_Zigbee(int fromUARTInterrupt) {
 
 
 		// master states
-	case z_LISTEN_REQUEST_ID: {
-		if (fromUARTInterrupt) {
-			if (XBEE_RX[0] == z_trame_id) {
-				// we recieved a trame id
-				z_recieved_id = XBEE_RX[4];
-			}
-		}
-		if (z_tempo == 0) {
-			Zigbee = z_SELECT_ROBOT;
-		} else {
-			z_tempo--;
-		}
-	}
-
 	case z_MOVING: {
 		// Wait state during parking sequence
 		break;
@@ -1596,9 +1586,35 @@ void Gestion_Zigbee(int fromUARTInterrupt) {
 		break;
 	}
 
+	case z_LISTEN_REQUEST_ID: {
+		if (fromUARTInterrupt) {
+			if (XBEE_RX[0] == z_trame_id) {
+				// we recieved a trame id
+				z_recieved_id = XBEE_RX[4];
+			}
+		}
+		if (z_tempo == 0) {
+			Zigbee = z_SELECT_ROBOT;
+		} else {
+			z_tempo--;
+		}
+	}
+
 
 	case z_SELECT_ROBOT: {
 		if (z_robotID != z_recieved_id) {
+			// select position
+
+			if (position_has_been_received == 0) {
+				z_recieved_distance_x = distance_devant;
+				z_recieved_distance_y = distance_plus_90;
+				z_recieved_distance_z = distance_moins_90;
+			}
+
+			// increment Z0
+			z_recieved_distance_y -= z_pos_increment;
+			z_recieved_distance_z += z_pos_increment;
+
 			// a robot did actually respond
 			z_select_robot(z_recieved_id);
 		}
@@ -1625,8 +1641,9 @@ void z_sendID() {
 // send a trame indicating which robot has been selected and the destination
 // position
 void z_select_robot(uint8_t selectedRobotID) {
-	uint8_t trame[5] = {z_cmd_select_robot, selectedRobotID, distance_devant,
-						distance_plus_90, distance_moins_90};
+	uint8_t trame[5] = {z_cmd_select_robot, selectedRobotID,
+						z_recieved_distance_x, z_recieved_distance_y,
+						z_recieved_distance_z};
 	z_sendData(z_robotID, 5);
 }
 
