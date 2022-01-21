@@ -1463,7 +1463,7 @@ void Gestion_Zigbee(void) {
 			}
 			else if () // on récupère une position
 			{
-
+				Park_state = PARK_START; // démarrer séquence de parking
 			}
 			break;
 		}
