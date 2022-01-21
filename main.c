@@ -43,8 +43,7 @@ void HAL_ADC_LevelOutOfWindowCallback(ADC_HandleTypeDef* hadc)
 }
 /* USER CODE END PTD */
 
-/* Private define ------------------------------------------------------------*/
-/* USER CODE BEGIN PD */
+
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -58,15 +57,15 @@ void HAL_ADC_LevelOutOfWindowCallback(ADC_HandleTypeDef* hadc)
 #define AVANCE 	GPIO_PIN_SET
 #define RECULE  GPIO_PIN_RESET
 #define POURCENT 640
-#define Seuil_Dist_4 850 // correspond ?? 10 cm.
-#define Seuil_Dist_3 850
-#define Seuil_Dist_1 850
-#define Seuil_Dist_2 850
+#define Seuil_Dist_4 1600 // correspond à 10 cm.
+#define Seuil_Dist_3 1600
+#define Seuil_Dist_1 1600
+#define Seuil_Dist_2 1600
 #define V1 38
 #define V2 56
 #define V3 76
 #define Vmax 95
-#define T_2_S 1000 //( pwm p??riode = 2 ms )
+#define T_2_S 1000 //( pwm période = 2 ms )
 #define T_200_MS 100
 #define T_1_S 500
 #define T_2000_MS 1000
@@ -125,12 +124,9 @@ volatile unsigned char New_CMDE = 0;
 volatile uint16_t Dist_ACS_1, Dist_ACS_2, Dist_ACS_3, Dist_ACS_4;
 volatile unsigned int Time = 0;
 volatile unsigned int Tech = 0;
-uint16_t adc_buffer[10]; //modification de 8 ?? 10
+uint16_t adc_buffer[10]; //modification de 8 à 10
 uint16_t Buff_Dist[8];
-
-// usart
 uint8_t BLUE_RX;
-uint8_t XBEE_RX;
 
 uint16_t _DirG, _DirD, CVitG, CVitD, DirD, DirG;
 uint16_t _CVitD = 0;
@@ -211,7 +207,6 @@ int main(void)
   MX_TIM4_Init();
   MX_USART3_UART_Init();
   MX_TIM1_Init();
-  MX_USART1_UART_Init();
 
   /* Initialize interrupts */
   MX_NVIC_Init();
@@ -230,7 +225,6 @@ int main(void)
 	HAL_TIM_Encoder_Start(&htim4, TIM_CHANNEL_ALL);
 
 	HAL_UART_Receive_IT(&huart3, &BLUE_RX, 1);
-	HAL_UART_Receive_IT(&huart1, &XBEE_RX, 1);
 
 	HAL_TIM_Base_Start_IT(&htim1);
 	HAL_TIM_IC_Start(&htim1, TIM_CHANNEL_1);
@@ -249,14 +243,7 @@ int main(void)
 
 
   // Reset position sonar
-<<<<<<< HEAD
-	// gauche :??
-	// middle :??1600
-	// droit :??900
-  __HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_4, 4000); //middle
-=======
   __HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_4, 3000); //middle
->>>>>>> 78748520566477d1be1548f824b419cb3a3e9d00
 
 	while (1)
   {
@@ -501,6 +488,7 @@ void Gestion_Park(void) {
 					Mode = ACTIF;
 					incr = 0;
 					action = 0;
+					Zigbee = REQUEST_ID;
 					Park_state = ARRIVEE; //aller au case suivant
 				}
 			}
@@ -521,7 +509,6 @@ void Gestion_Park(void) {
 		}
 	case ARRIVEE : {
 		break;
-
 		}
 	}
 }
@@ -549,14 +536,14 @@ if (New_CMDE) {
 	switch (CMDE) {
 		case STOP: {
 			_CVitD = _CVitG = 0;
-			// Mise en sommeil: STOP mode , r??veil via IT BP1
+			// Mise en sommeil: STOP mode , réveil via IT BP1
 			Etat = VEILLE;
 			Mode = SLEEP;
 
 			break;
 		}
 		case START: {
-			// r??veil syt??me grace ?? l'IT BP1
+			// réveil sytème grace à l'IT BP1
 			Etat = ARRET;
 			Mode = SLEEP;
 
@@ -1111,6 +1098,13 @@ void ACS(void) {
 	static uint16_t Delta3 = 0;
 	static uint16_t Delta4 = 0;
 
+	CVitD = _CVitD;
+	CVitG = _CVitG;
+	DirD = _DirD;
+	DirG = _DirG;
+
+	return;
+
 	switch (Etat) {
 	case ARRET: {
 		if (Mode == ACTIF )
@@ -1231,7 +1225,7 @@ void regulateur(void) {
 
 	switch (Etat) {
 	case ARRET: {
-		if (Mode == ACTIF || Mode == isMesure) // TODO : check if I'm really needed. Prevent going to sleep while mesuring.
+		if (Mode == ACTIF || Mode == isMesure)
 			Etat = ACTIF;
 		else {
 			__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_4, 0);
@@ -1299,21 +1293,6 @@ void regulateur(void) {
 	}
 }
 
-void SetupXBee(){
-	uint8_t data[6] = {0x63, 0x6F, 0x75, 0x63, 0x6F, 0x75};
-	sendData(data, 6);
-
-}
-
-void sendPosition(){
-	uint8_t data[3] = {distance_devant, distance_plus_90, distance_moins_90};
-	sendData(data, 3);
-}
-
-void sendData(uint8_t *data, int size){
-	HAL_UART_Transmit(&huart1, data, size, 1E6); // timeout 1s => 1Mhz
-}
-
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 	if (huart->Instance == USART3) {
 
@@ -1372,12 +1351,6 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 		HAL_UART_Receive_IT(&huart3, &BLUE_RX, 1);
 
 	}
-
-	else if (huart->Instance == USART1) {
-		// r??ception XBee
-		HAL_UART_Receive_IT(&huart1, &XBEE_RX, 1);
-
-	}
 }
 
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc) {
@@ -1416,7 +1389,7 @@ void save_distance(uint32_t distance){
 	}
 }
 
-// D??tection sonar
+// Détection sonar
 void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
 {
 	if(htim->Channel == HAL_TIM_ACTIVE_CHANNEL_2)
@@ -1434,8 +1407,6 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
 void start_sonar_mesure(){
 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_SET); // Start sonar mesure
 }
-
-
 
 void Gestion_Sonar(){
 
@@ -1485,14 +1456,18 @@ void Gestion_Zigbee(void) {
 			break;
 		}
 		case LISTEN : {
-			if () // on récupère ID du robot Park
+			if () // on recupere ID du robot Park
 			{
 
 				Zigbee = TRANSMIT_ID;
 			}
 			else if () // on récupère une position
 			{
-				Park_state = PARK_START; // démarrer séquence de parking
+				Park_state = PARK_START; // démarrer sequence de parking
+			}
+			else if () // request id
+			{
+				Park_state = TRANSMIT_ID;
 			}
 			break;
 		}
@@ -1608,3 +1583,4 @@ void assert_failed(uint8_t *file, uint32_t line)
 }
 #endif /* USE_FULL_ASSERT */
 
+/************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

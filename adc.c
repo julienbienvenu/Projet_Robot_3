@@ -1,22 +1,22 @@
-/* USER CODE BEGIN Header */
 /**
   ******************************************************************************
-  * @file    adc.c
-  * @brief   This file provides code for the configuration
-  *          of the ADC instances.
+  * File Name          : ADC.c
+  * Description        : This file provides code for the configuration
+  *                      of the ADC instances.
   ******************************************************************************
   * @attention
   *
-  * Copyright (c) 2022 STMicroelectronics.
-  * All rights reserved.
+  * <h2><center>&copy; Copyright (c) 2022 STMicroelectronics.
+  * All rights reserved.</center></h2>
   *
-  * This software is licensed under terms that can be found in the LICENSE file
-  * in the root directory of this software component.
-  * If no LICENSE file comes with this software, it is provided AS-IS.
+  * This software component is licensed by ST under BSD 3-Clause license,
+  * the "License"; You may not use this file except in compliance with the
+  * License. You may obtain a copy of the License at:
+  *                        opensource.org/licenses/BSD-3-Clause
   *
   ******************************************************************************
   */
-/* USER CODE END Header */
+
 /* Includes ------------------------------------------------------------------*/
 #include "adc.h"
 
@@ -30,17 +30,9 @@ DMA_HandleTypeDef hdma_adc1;
 /* ADC1 init function */
 void MX_ADC1_Init(void)
 {
-
-  /* USER CODE BEGIN ADC1_Init 0 */
-
-  /* USER CODE END ADC1_Init 0 */
-
   ADC_AnalogWDGConfTypeDef AnalogWDGConfig = {0};
   ADC_ChannelConfTypeDef sConfig = {0};
 
-  /* USER CODE BEGIN ADC1_Init 1 */
-
-  /* USER CODE END ADC1_Init 1 */
   /** Common config
   */
   hadc1.Instance = ADC1;
@@ -58,7 +50,7 @@ void MX_ADC1_Init(void)
   */
   AnalogWDGConfig.WatchdogMode = ADC_ANALOGWATCHDOG_SINGLE_REG;
   AnalogWDGConfig.HighThreshold = 4000;
-  AnalogWDGConfig.LowThreshold = 1355;
+  AnalogWDGConfig.LowThreshold = 1533;
   AnalogWDGConfig.Channel = ADC_CHANNEL_15;
   AnalogWDGConfig.ITMode = ENABLE;
   if (HAL_ADC_AnalogWDGConfig(&hadc1, &AnalogWDGConfig) != HAL_OK)
@@ -102,14 +94,10 @@ void MX_ADC1_Init(void)
   */
   sConfig.Channel = ADC_CHANNEL_15;
   sConfig.Rank = ADC_REGULAR_RANK_5;
-  sConfig.SamplingTime = ADC_SAMPLETIME_1CYCLE_5;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
     Error_Handler();
   }
-  /* USER CODE BEGIN ADC1_Init 2 */
-
-  /* USER CODE END ADC1_Init 2 */
 
 }
 
@@ -134,7 +122,7 @@ void HAL_ADC_MspInit(ADC_HandleTypeDef* adcHandle)
     PC5     ------> ADC1_IN15
     PB1     ------> ADC1_IN9
     */
-    GPIO_InitStruct.Pin = IR1_in_Pin|IR2_in_Pin|IR4_in_Pin|VBat_Pin;
+    GPIO_InitStruct.Pin = IR1_in_Pin|IR2_in_Pin|IR4_in_Pin|GPIO_PIN_5;
     GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
     HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
@@ -186,7 +174,7 @@ void HAL_ADC_MspDeInit(ADC_HandleTypeDef* adcHandle)
     PC5     ------> ADC1_IN15
     PB1     ------> ADC1_IN9
     */
-    HAL_GPIO_DeInit(GPIOC, IR1_in_Pin|IR2_in_Pin|IR4_in_Pin|VBat_Pin);
+    HAL_GPIO_DeInit(GPIOC, IR1_in_Pin|IR2_in_Pin|IR4_in_Pin|GPIO_PIN_5);
 
     HAL_GPIO_DeInit(IR3_in_GPIO_Port, IR3_in_Pin);
 
@@ -204,3 +192,5 @@ void HAL_ADC_MspDeInit(ADC_HandleTypeDef* adcHandle)
 /* USER CODE BEGIN 1 */
 
 /* USER CODE END 1 */
+
+/************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
