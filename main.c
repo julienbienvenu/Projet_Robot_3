@@ -105,9 +105,18 @@ enum PARK_STATE {
 enum PARK_STATE Park_state = VEILLE ;
 
 enum MODE {
-	SLEEP, ACTIF, is_PARK, is_ATTENTE_PARK
+	SLEEP, ACTIF, is_PARK, is_ATTENTE_PARK, isMesure,
 };
 volatile enum MODE Mode;
+
+enum ZIGBEE {
+	SLEEP,
+	LISTEN,
+	REQUEST_ID,
+	TRANSMIT_ID,
+	TRANSMIT_POS,
+};
+volatile enum ZIGBEE Zigbee;
 
 enum ETAT_SONAR {S_IDLE, S_START, S_MES_DEVANT, S_ROTATION_M_90, S_MES_M_90, S_ROTATION_P_90, S_MES_P_90}; // Mesure + 90
 enum ETAT_SONAR Etat_Sonar = S_IDLE;
@@ -156,6 +165,7 @@ static void MX_NVIC_Init(void);
 /* USER CODE BEGIN PFP */
 void Gestion_Commandes(void);
 void Gestion_Park(void);
+void Gestion_Zigbee(void);
 void regulateur(void);
 void controle(void);
 void Calcul_Vit(void);
@@ -239,10 +249,14 @@ int main(void)
 
 
   // Reset position sonar
+<<<<<<< HEAD
 	// gauche :??
 	// middle :??1600
 	// droit :??900
   __HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_4, 4000); //middle
+=======
+  __HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_4, 3000); //middle
+>>>>>>> 78748520566477d1be1548f824b419cb3a3e9d00
 
 	while (1)
   {
@@ -250,6 +264,7 @@ int main(void)
 	  Gestion_Commandes();
 	  controle();
 	  Gestion_Park();
+	  Gestion_Zigbee();
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -316,62 +331,191 @@ static void MX_NVIC_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+int action = 0;
+int incr = 0;
+int val_distd = 0;
+int sonar_acquisition = 0;
+int distance_sonar = 0;
+
 void Gestion_Park(void) {
-	//static enum PARK_STATE Park_state = VEILLE;
 
 	switch(Park_state) {
 	case VEILLE : {
 		break;
 	}
 	case PARK_START : {
-		DistD = 0;
-		DistG = 0;
+		action = 0;
+		incr = 0;
+		val_distd = DistD;
+		sonar_acquisition = 1;
 		Park_state = AVANCER1;
+
 		break;
 	}
 	case AVANCER1 : {
-		if (DistD > 1000)
+		if (DistD > val_distd+1000)
 		{
-			HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
-			_DirG = RECULE;
-			_DirD = RECULE;
-			_CVitG = 0;
-			_CVitD = 0;
-			//Etat = ARRET;
-			Mode = ACTIF;
-			Park_state = MESURE;
+			if (action==1)
+			{
+				HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
+				New_CMDE = 1;
+				CMDE = ARRIERE;
+				//Etat = ARRET;
+				Mode = ACTIF;
+				action = 0;
+				Park_state = MESURE;
+			}
 		}
 		else {
-			HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
-			_DirG = AVANCE;
-			_DirD = AVANCE;
-			_CVitG = V1;
-			_CVitD = V1;
-			//Etat = AV1;
-			Mode = ACTIF;
+			if (action==0)
+			{
+				HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
+				DistD=0;
+				New_CMDE = 1;
+				CMDE = AVANT;
+				//Etat = AV1;
+				Mode = ACTIF;
+				action = 1;
+			}
 		}
 		break;
 	}
 	case MESURE : {
-		Etat_Sonar = S_START;
+		//Etat_Sonar = S_START;
+		incr = 0;
 		Park_state = ATTENTE_MESURE;
 		break;
 	}
 	case ATTENTE_MESURE : {
+		val_distd = DistD;
+		if (incr>1000)
+			{Park_state = ROT_GAUCHE;};
 		break;
 	}
 	case ROT_GAUCHE : {
-		break;
+		if (DistD > val_distd + 500)
+		{
+			if (action==1)
+			{
+				HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
+				New_CMDE = 1;
+				CMDE = DROITE;
+				//Etat = ARRET;
+				Mode = ACTIF;
+				action = 0;
+				incr = 0;
+				val_distd = DistD; //update val_distd
+				Park_state = AVANCER2; //aller au case suivant
+			}
 		}
+		else {
+			if (action==0)
+			{
+				HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
+				New_CMDE = 1;
+				CMDE = GAUCHE;
+				//Etat = AV1;
+				Mode = ACTIF;
+				action = 1;
+			}
+		}
+		break;
+	}
 	case AVANCER2 : {
+		if (incr>1000)
+		{
+			// En fonction du sonar
+			if (distance_sonar < distance_moins_90)
+			{
+				if (action==1)
+				{
+					HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
+					New_CMDE = 1;
+					CMDE = ARRIERE;
+					//Etat = ARRET;
+					Mode = ACTIF;
+					incr = 0;
+					action = 0;
+					val_distd = DistD; //update val_distd
+					Park_state = ROT_DROITE; //aller au case suivant
+				}
+			}
+			else {
+				if (action==0)
+				{
+					HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
+					New_CMDE = 1;
+					CMDE = AVANT;
+					//Etat = AV1;
+					Mode = ACTIF;
+					action = 1;
+				}
+			}
+		}
 		break;
 
 		}
 	case ROT_DROITE : {
+		if (incr>1000) {
+		if (DistD < val_distd - 400)
+		{
+			if (action==1)
+			{
+				HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
+				New_CMDE = 1;
+				CMDE = GAUCHE;
+				//Etat = ARRET;
+				Mode = ACTIF;
+				val_distd = DistD; //update val_distd
+				action = 0;
+				incr = 0;
+				Park_state = AVANCER3; //aller au case suivant
+			}
+		}
+		else {
+			if (action==0)
+			{
+				HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
+				New_CMDE = 1;
+				CMDE = DROITE;
+				//Etat = AV1;
+				Mode = ACTIF;
+				action = 1;
+			}
+		}
 		break;
-
+		}
 		}
 	case AVANCER3 : {
+		if (incr>1000)
+		{
+			// En fonction du sonar
+			if (distance_sonar < distance_devant)
+			{
+				if (action==1)
+				{
+					HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
+					New_CMDE = 1;
+					CMDE = ARRIERE;
+					//Etat = ARRET;
+					Mode = ACTIF;
+					incr = 0;
+					action = 0;
+					Park_state = ARRIVEE; //aller au case suivant
+				}
+			}
+			else {
+				if (action==0)
+				{
+					HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
+					New_CMDE = 1;
+					CMDE = AVANT;
+					//Etat = AV1;
+					Mode = ACTIF;
+					action = 1;
+				}
+			}
+		}
 		break;
 
 		}
@@ -933,11 +1077,13 @@ if (New_CMDE) {
 		}
 		case PARK: {
 			Park_state = PARK_START;
+			Zigbee = REQUEST_ID;
 			Mode = ACTIF;
 			break;
 		}
 		case ATTENTE_PARK: {
 			Park_state = PARK_START;
+			Zigbee = LISTEN;
 			Mode = ACTIF;
 			break;
 		}
@@ -957,7 +1103,7 @@ void controle(void) {
 
 void ACS(void) {
 	enum ETAT {
-		ARRET, ACTIF, isPARK, isATTENTE_PARK
+		ARRET, ACTIF,
 	};
 	static enum ETAT Etat = ARRET;
 	static uint16_t Delta1 = 0;
@@ -1085,7 +1231,7 @@ void regulateur(void) {
 
 	switch (Etat) {
 	case ARRET: {
-		if (Mode == ACTIF)
+		if (Mode == ACTIF || Mode == isMesure) // TODO : check if I'm really needed. Prevent going to sleep while mesuring.
 			Etat = ACTIF;
 		else {
 			__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_4, 0);
@@ -1214,6 +1360,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 			break;
 		}
 		case 'V':{
+			Mode = isMesure;
 			Etat_Sonar = S_START;
 			New_CMDE = 1;
 			break;
@@ -1277,6 +1424,10 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
 		uint32_t distance = HAL_TIM_ReadCapturedValue(htim, TIM_CHANNEL_2);
 		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_RESET);
 		save_distance(distance);
+		if (sonar_acquisition == 1)
+		{
+			distance_sonar = distance;
+		}
 	}
 }
 
@@ -1290,12 +1441,12 @@ void Gestion_Sonar(){
 
 	switch( Etat_Sonar ){
 		case S_IDLE:{
-
+			__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_4, 2400);
 			break;
 		}
 
 		case S_START: {
-			__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_4, 900);
+			__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_4, 2400);
 			cpt_sonar = T_1_S;
 			Etat_Sonar = S_MES_DEVANT;
 			break;
@@ -1312,14 +1463,14 @@ void Gestion_Sonar(){
 		}
 
 		case S_ROTATION_M_90: {
-			__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_4, 3200);
+			__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_4, 4000);
 			cpt_sonar = T_1_S;
 			Etat_Sonar = S_MES_M_90;
 			break;
 		}
 
 		case S_ROTATION_P_90: {
-			__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_4, 1800);
+			__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_4, 900);
 			cpt_sonar = T_1_S;
 			Etat_Sonar = S_MES_P_90;
 			break;
@@ -1327,6 +1478,43 @@ void Gestion_Sonar(){
 
 	}
 }
+
+void Gestion_Zigbee(void) {
+	switch (Zigbee) {
+		case SLEEP : {
+			break;
+		}
+		case LISTEN : {
+			if () // on récupère ID du robot Park
+			{
+
+				Zigbee = TRANSMIT_ID;
+			}
+			else if () // on récupère une position
+			{
+				Park_state = PARK_START; // démarrer séquence de parking
+			}
+			break;
+		}
+		case REQUEST_ID : {
+			// emission pour envoyer une demande Zigbee
+			break;
+		}
+		case TRANSMIT_ID : {
+
+			Zigbee = LISTEN; // on listen pour avoir pos
+			break;
+		}
+		case TRANSMIT_POS : {
+
+			Zigbee = SLEEP; // fin séquence Zigbee
+			break;
+		}
+	}
+}
+
+
+int distance_actuel; // sonar
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef * htim) {
 
@@ -1366,6 +1554,13 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef * htim) {
 			cpt_sonar--;
 		}else{
 			Gestion_Sonar();
+		}
+
+		incr++;
+
+		if (sonar_acquisition == 1)
+		{
+			start_sonar_mesure();
 		}
 	}
 }
