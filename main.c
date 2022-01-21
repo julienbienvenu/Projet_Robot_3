@@ -108,6 +108,15 @@ enum MODE {
 };
 volatile enum MODE Mode;
 
+enum ZIGBEE {
+	SLEEP,
+	LISTEN,
+	REQUEST_ID,
+	TRANSMIT_ID,
+	TRANSMIT_POS,
+};
+volatile enum ZIGBEE Zigbee;
+
 enum ETAT_SONAR {S_IDLE, S_START, S_MES_DEVANT, S_ROTATION_M_90, S_MES_M_90, S_ROTATION_P_90, S_MES_P_90}; // Mesure + 90
 enum ETAT_SONAR Etat_Sonar = S_IDLE;
 
@@ -152,6 +161,7 @@ static void MX_NVIC_Init(void);
 /* USER CODE BEGIN PFP */
 void Gestion_Commandes(void);
 void Gestion_Park(void);
+void Gestion_Zigbee(void);
 void regulateur(void);
 void controle(void);
 void Calcul_Vit(void);
@@ -241,6 +251,7 @@ int main(void)
 	  Gestion_Commandes();
 	  controle();
 	  Gestion_Park();
+	  Gestion_Zigbee();
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -1053,11 +1064,13 @@ if (New_CMDE) {
 		}
 		case PARK: {
 			Park_state = PARK_START;
+			Zigbee = REQUEST_ID;
 			Mode = ACTIF;
 			break;
 		}
 		case ATTENTE_PARK: {
 			Park_state = PARK_START;
+			Zigbee = LISTEN;
 			Mode = ACTIF;
 			break;
 		}
@@ -1436,6 +1449,41 @@ void Gestion_Sonar(){
 
 	}
 }
+
+void Gestion_Zigbee(void) {
+	switch (Zigbee) {
+		case SLEEP : {
+			break;
+		}
+		case LISTEN : {
+			if () // on récupère ID du robot Park
+			{
+
+				Zigbee = TRANSMIT_ID;
+			}
+			else if () // on récupère une position
+			{
+
+			}
+			break;
+		}
+		case REQUEST_ID : {
+			// emission pour envoyer une demande Zigbee
+			break;
+		}
+		case TRANSMIT_ID : {
+
+			Zigbee = LISTEN; // on listen pour avoir pos
+			break;
+		}
+		case TRANSMIT_POS : {
+
+			Zigbee = SLEEP; // fin séquence Zigbee
+			break;
+		}
+	}
+}
+
 
 int distance_actuel; // sonar
 
