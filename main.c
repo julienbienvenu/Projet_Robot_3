@@ -158,7 +158,8 @@ volatile enum ZIGBEE Zigbee;
 
 uint8_t XBEE_RX[5];		  // les trames ZIGBEE sont en 5 bits
 uint8_t z_robotID = 0x5C; // the ID of the actual robot
-volatile unsigned int z_tempo;	  // the actual temporisation before sending the robot ID
+volatile unsigned int
+	z_tempo;		  // the actual temporisation before sending the robot ID
 #define MAX_RAND 1000 // max tempo: 2 seconds
 #define z_pos_increment                                                        \
 	50 // the value by wich each robot should be espaced // TODO : set me
@@ -1541,16 +1542,17 @@ void Gestion_Zigbee(int fromUARTInterrupt) {
 				z_tempo = rand() % MAX_RAND;
 				Zigbee = z_TRANSMIT_ID_tempo;
 			} else if (XBEE_RX[0] == z_cmd_select_robot) {
-
-				Zigbee = z_MOVING;
-				Park_state = PARK_START;
-
 				// get values from trame
 				z_recieved_id = XBEE_RX[1];
 				z_recieved_distance_x = XBEE_RX[2];
 				z_recieved_distance_y = XBEE_RX[3];
 				z_recieved_distance_z = XBEE_RX[4];
 				position_has_been_received = 1; // set the position source
+
+				if (z_recieved_id == z_robotID) {
+					Zigbee = z_MOVING;
+					Park_state = PARK_START;
+				}
 			}
 		}
 		break;
