@@ -1605,8 +1605,26 @@ void Gestion_Zigbee(int fromUARTInterrupt) {
 	}
 >>>>>>> Stashed changes
 
+<<<<<<< Updated upstream
 			Zigbee = z_LISTEN_POS; // on listen pour avoir pos
 			break;
+=======
+	case z_REQUEST_ID: { // we are done, we will then request all the remaining
+						 // robot to send us their ID
+		// emission pour envoyer une demande Zigbee
+		z_recieved_id = z_robotID;
+		z_request_id();
+		Zigbee = z_LISTEN_REQUEST_ID;
+		break;
+	}
+
+	case z_LISTEN_REQUEST_ID: {
+		if (fromUARTInterrupt) {
+			if (XBEE_RX[0] == z_trame_id) {
+				// we recieved a trame id
+				z_recieved_id = XBEE_RX[4];
+			}
+>>>>>>> Stashed changes
 		}
 		case z_TRANSMIT_POS : {
 
