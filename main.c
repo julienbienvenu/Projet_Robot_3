@@ -1541,7 +1541,6 @@ void Gestion_Zigbee(int fromUARTInterrupt) {
 				z_tempo = rand() % MAX_RAND;
 				Zigbee = z_TRANSMIT_ID_tempo;
 			} else if (XBEE_RX[0] == z_cmd_select_robot) {
-				XBEE_RX = z_cmd_select_robot;
 
 				Zigbee = z_MOVING;
 				Park_state = PARK_START;
@@ -1560,8 +1559,6 @@ void Gestion_Zigbee(int fromUARTInterrupt) {
 	case z_TRANSMIT_ID_tempo: {
 		if (z_tempo == 0) {
 			Zigbee = z_TRANSMIT_ID;
-		} else {
-			z_tempo--;
 		}
 		break;
 	}
@@ -1586,7 +1583,7 @@ void Gestion_Zigbee(int fromUARTInterrupt) {
 
 		z_request_id();
 		Zigbee = z_LISTEN_REQUEST_ID;
-		z_tempo = MAX_RAND;
+		z_tempo = T_2000_MS * 4; // TODO : remove me
 		break;
 	}
 
@@ -1598,8 +1595,6 @@ void Gestion_Zigbee(int fromUARTInterrupt) {
 			}
 		} else if (z_tempo == 0) {
 			Zigbee = z_SELECT_ROBOT;
-		} else {
-			z_tempo--;
 		}
 
 		break;
@@ -1693,6 +1688,11 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim) {
 			cpt_sonar--;
 		} else {
 			Gestion_Sonar();
+		}
+
+
+		if (z_tempo > 0) {
+			z_tempo--;
 		}
 
 		incr++;
