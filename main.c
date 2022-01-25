@@ -1550,6 +1550,8 @@ void Gestion_Zigbee(int fromUARTInterrupt) {
 				position_has_been_received = 1; // set the position source
 
 				if (z_recieved_id == z_robotID) {
+					CMDE = START;
+					New_CMDE = 1;
 					Zigbee = z_MOVING;
 					Park_state = PARK_START;
 				}
@@ -1713,6 +1715,8 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 		CMDE = STOP;
 	} else {
 		CMDE = START;
+
+		CMDE = PARK; // TODO : remove me
 	}
 	TOGGLE = ~TOGGLE;
 	New_CMDE = 1;
