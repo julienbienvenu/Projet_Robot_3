@@ -1364,7 +1364,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef* huart) {
 	if (huart->Instance == USART1) {
 		// just recieved XBEE message
 		Gestion_Zigbee(1); // save data
-		HAL_UART_Receive_IT(&huart1, &XBEE_RX, 1);
+		HAL_UART_Receive_IT(&huart1, &XBEE_RX, 5);
 	} else if (huart->Instance == USART3) {
 
 		// W -> PARK
@@ -1420,7 +1420,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef* huart) {
 			New_CMDE = 1;
 		}
 
-		HAL_UART_Receive_IT(&huart3, &BLUE_RX, 5);
+		HAL_UART_Receive_IT(&huart3, &BLUE_RX, 1);
 	}
 }
 
@@ -1703,10 +1703,11 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 
 	static unsigned char TOGGLE = 0;
 
-	if (TOGGLE)
+	if (TOGGLE) {
 		CMDE = STOP;
-	else
+	} else {
 		CMDE = START;
+	}
 	TOGGLE = ~TOGGLE;
 	New_CMDE = 1;
 }
