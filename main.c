@@ -1602,6 +1602,8 @@ void Gestion_Zigbee(int fromUARTInterrupt) {
 		} else {
 			z_tempo--;
 		}
+
+		break;
 	}
 
 
