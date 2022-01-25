@@ -1596,8 +1596,7 @@ void Gestion_Zigbee(int fromUARTInterrupt) {
 				// we recieved a trame id
 				z_recieved_id = XBEE_RX[4];
 			}
-		}
-		if (z_tempo == 0) {
+		} else if (z_tempo == 0) {
 			Zigbee = z_SELECT_ROBOT;
 		} else {
 			z_tempo--;
@@ -1636,12 +1635,12 @@ void z_sendData(uint8_t* data, int size) {
 
 void z_request_id() {
 	uint8_t trame[5] = {z_cmd_demande_id, 0x0, 0x0, 0x0, 0x0};
-	z_sendData(z_robotID, 5);
+	z_sendData(trame, 5);
 }
 
 void z_sendID() {
 	uint8_t trame[5] = {z_trame_id, 0x0, 0x0, 0x0, z_robotID};
-	z_sendData(z_robotID, 5);
+	z_sendData(trame, 5);
 }
 
 // send a trame indicating which robot has been selected and the destination
@@ -1650,7 +1649,7 @@ void z_select_robot(uint8_t selectedRobotID) {
 	uint8_t trame[5] = {z_cmd_select_robot, selectedRobotID,
 						z_recieved_distance_x, z_recieved_distance_y,
 						z_recieved_distance_z};
-	z_sendData(z_robotID, 5);
+	z_sendData(trame, 5);
 }
 
 int distance_actuel; // sonar
