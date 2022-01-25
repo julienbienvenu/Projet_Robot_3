@@ -157,7 +157,7 @@ enum ZIGBEE {
 volatile enum ZIGBEE Zigbee;
 
 uint8_t XBEE_RX[5];		  // les trames ZIGBEE sont en 5 bits
-uint8_t z_robotID = 0x5C; // the ID of the actual robot
+uint8_t z_robotID = 0x07; // the ID of the actual robot // TODO : set me
 volatile unsigned int
 	z_tempo;		  // the actual temporisation before sending the robot ID
 #define MAX_RAND 1000 // max tempo: 2 seconds
@@ -1135,12 +1135,12 @@ void Gestion_Commandes(void) {
 		case PARK: {
 			Etat_Sonar = S_START;
 			Zigbee = z_REQUEST_ID;
-			Mode = ACTIF;
+			Mode = is_PARK;
 			break;
 		}
 		case ATTENTE_PARK: {
 			Zigbee = z_LISTEN_CMD;
-			Mode = ACTIF;
+			Mode = is_ATTENTE_PARK;
 			break;
 		}
 		}
