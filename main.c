@@ -1541,13 +1541,13 @@ void Gestion_Zigbee(int fromUARTInterrupt) {
 				z_tempo = rand() % MAX_RAND;
 				Zigbee = z_TRANSMIT_ID_tempo;
 			} else if (XBEE_RX[0] == z_cmd_select_robot) {
-				XBEE_RX == z_cmd_select_robot;
+				XBEE_RX = z_cmd_select_robot;
 
 				Zigbee = z_MOVING;
 				Park_state = PARK_START;
 
 				// get values from trame
-				z_recieved_id == XBEE_RX[1];
+				z_recieved_id = XBEE_RX[1];
 				z_recieved_distance_x = XBEE_RX[2];
 				z_recieved_distance_y = XBEE_RX[3];
 				z_recieved_distance_z = XBEE_RX[4];
