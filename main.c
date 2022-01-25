@@ -1554,6 +1554,7 @@ void Gestion_Zigbee(int fromUARTInterrupt) {
 				position_has_been_received = 1; // set the position source
 			}
 		}
+		break;
 	}
 
 	case z_TRANSMIT_ID_tempo: {
