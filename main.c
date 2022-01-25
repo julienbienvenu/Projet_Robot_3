@@ -1716,7 +1716,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 	} else {
 		CMDE = START;
 
-		CMDE = PARK; // TODO : remove me
+		// CMDE = PARK; // TODO : remove me
 	}
 	TOGGLE = ~TOGGLE;
 	New_CMDE = 1;
