@@ -484,7 +484,8 @@ void Gestion_Park(void) {
 		if (incr > 1000) {
 			// En fonction du
 			// sonar
-			if (distance_sonar < z_recieved_distance_x - 5000) { // park next to robot
+			if (distance_sonar <
+				z_recieved_distance_x - 5000) { // park next to robot
 				if (action == 1) {
 					HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
 					New_CMDE = 1;
@@ -595,7 +596,7 @@ void Gestion_Commandes(void) {
 	};
 	static enum ETAT Etat = VEILLE;
 
-	if (New_CMDE) {
+	if (New_CMDE == 1) {
 		New_CMDE = 0;
 		switch (CMDE) {
 		case STOP: {
@@ -1584,6 +1585,7 @@ void Gestion_Zigbee(int fromUARTInterrupt) {
 
 		z_request_id();
 		Zigbee = z_LISTEN_REQUEST_ID;
+		z_tempo = MAX_RAND;
 		break;
 	}
 
