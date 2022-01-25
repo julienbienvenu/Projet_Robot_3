@@ -1152,13 +1152,18 @@ void Gestion_Commandes(void) {
 			break;
 		}
 		case PARK: {
+<<<<<<< Updated upstream
 			Park_state = PARK_START;
+=======
+			//Park_state = PARK_START;
+			Etat_Sonar = S_START;
+>>>>>>> Stashed changes
 			Zigbee = z_REQUEST_ID;
 			Mode = ACTIF;
 			break;
 		}
 		case ATTENTE_PARK: {
-			Park_state = PARK_START;
+			//Park_state = PARK_START;
 			Zigbee = z_LISTEN_REQUEST_ID;
 			Mode = ACTIF;
 			break;
@@ -1588,7 +1593,17 @@ void Gestion_Zigbee(int fromUARTInterrupt) {
 			Park_state = PARK_START;
 >>>>>>> Stashed changes
 		}
+<<<<<<< Updated upstream
 		case z_TRANSMIT_ID : {
+=======
+		break;
+	}
+
+	case z_MOVING: {
+		// Wait state during parking sequence
+		break;
+	}
+>>>>>>> Stashed changes
 
 			Zigbee = z_LISTEN_POS; // on listen pour avoir pos
 			break;
@@ -1598,6 +1613,30 @@ void Gestion_Zigbee(int fromUARTInterrupt) {
 			Zigbee = z_SLEEP; // fin séquence Zigbee
 			break;
 		}
+<<<<<<< Updated upstream
+=======
+		break;
+	}
+
+	case z_REQUEST_ID: {
+
+		// emission pour envoyer une demande Zigbee
+		Zigbee = z_LISTEN_ID;
+		break;
+	}
+
+	case z_TRANSMIT_ID: {
+		z_sendID();				 // TODO : check me
+		Zigbee = z_LISTEN_POS_x; // on listen pour avoir pos
+		break;
+	}
+
+	case z_TRANSMIT_POS: {
+		z_sendPosition();
+		Zigbee = z_SLEEP; // fin s??quence Zigbee
+		break;
+	}
+>>>>>>> Stashed changes
 	}
 }
 
