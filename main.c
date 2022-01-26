@@ -1497,7 +1497,6 @@ void Gestion_Sonar() {
 	case S_START: {
 		__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_4, 2400);
 		cpt_sonar = T_1_S;
-		start_sonar_mesure = 1;
 		Etat_Sonar = S_MES_DEVANT;
 		break;
 	}
