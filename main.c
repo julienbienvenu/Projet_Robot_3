@@ -40,10 +40,19 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
+
+enum CMDE { START, STOP, AVANT, ARRIERE, DROITE, GAUCHE, PARK, ATTENTE_PARK };
+
+uint8_t z_robotID = 0x95; // the ID of the actual robot // TODO : set me
+volatile enum CMDE start_cmde = PARK;
+int counter_direction_d = 1;
+int counter_direction_g = 1;
+
 
 // Surveillance batterie
 void HAL_ADC_LevelOutOfWindowCallback(ADC_HandleTypeDef* hadc) {
@@ -95,7 +104,6 @@ void HAL_ADC_LevelOutOfWindowCallback(ADC_HandleTypeDef* hadc) {
 #define CKd_G 0
 #define DELTA 0x50
 
-enum CMDE { START, STOP, AVANT, ARRIERE, DROITE, GAUCHE, PARK, ATTENTE_PARK };
 volatile enum CMDE CMDE;
 
 enum PARK_STATE {
@@ -157,8 +165,7 @@ enum ZIGBEE {
 };
 volatile enum ZIGBEE Zigbee;
 
-uint8_t XBEE_RX[5];		  // les trames ZIGBEE sont en 5 bits
-uint8_t z_robotID = 0x58; // the ID of the actual robot // TODO : set me
+uint8_t XBEE_RX[5]; // les trames ZIGBEE sont en 5 bits
 volatile unsigned int
 	z_tempo;		  // the actual temporisation before sending the robot ID
 #define MAX_RAND 1000 // max tempo: 2 seconds
@@ -486,8 +493,7 @@ void Gestion_Park(void) {
 		if (incr > 1000) {
 			// En fonction du
 			// sonar
-			if (distance_sonar <
-				z_recieved_distance_x - 5000) { // park next to robot
+			if (distance_sonar < z_recieved_distance_x) { // park next to robot
 				if (action == 1) {
 					HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
 					New_CMDE = 1;
@@ -554,7 +560,7 @@ void Gestion_Park(void) {
 					CMDE = ARRIERE;
 					// Etat =
 					// ARRET;
-					Mode = ACTIF;
+					Mode = is_PARK;
 					incr = 0;
 					action = 0;
 					Zigbee = z_REQUEST_ID; // Zigbee as father
@@ -1262,8 +1268,8 @@ void ACS(void) {
 
 void Calcul_Vit(void) {
 
-	DistD = __HAL_TIM_GET_COUNTER(&htim3);
-	DistG = __HAL_TIM_GET_COUNTER(&htim4);
+	DistD = counter_direction_d * __HAL_TIM_GET_COUNTER(&htim3);
+	DistG = counter_direction_g * __HAL_TIM_GET_COUNTER(&htim4);
 	VitD = abs(DistD - DistD_old);
 	VitG = abs(DistG - DistG_old);
 	DistD_old = DistD;
@@ -1467,7 +1473,9 @@ void save_distance(uint32_t distance) {
 // Détection sonar
 void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef* htim) {
 	if (htim->Channel == HAL_TIM_ACTIVE_CHANNEL_2) {
-		uint32_t distance = HAL_TIM_ReadCapturedValue(htim, TIM_CHANNEL_2);
+		uint32_t distance =
+			HAL_TIM_ReadCapturedValue(htim, TIM_CHANNEL_2) / 100;
+
 		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_RESET);
 		save_distance(distance);
 		if (sonar_acquisition == 1) {
@@ -1597,7 +1605,7 @@ void Gestion_Zigbee(int fromUARTInterrupt) {
 
 		z_request_id();
 		Zigbee = z_LISTEN_REQUEST_ID;
-		z_tempo = T_2000_MS * 4; // TODO : remove me
+		z_tempo = T_2000_MS; // TODO : remove me
 		break;
 	}
 
@@ -1620,19 +1628,20 @@ void Gestion_Zigbee(int fromUARTInterrupt) {
 			// select position
 
 			if (position_has_been_received == 0) {
-				z_recieved_distance_x = distance_devant;
-				z_recieved_distance_y = distance_plus_90;
-				z_recieved_distance_z = distance_moins_90;
+				z_recieved_distance_x = distance_moins_90;
+				z_recieved_distance_y = distance_devant;
+				z_recieved_distance_z = distance_plus_90;
 			}
 
 			// increment Z0
-			z_recieved_distance_y -= z_pos_increment;
-			z_recieved_distance_z += z_pos_increment;
+			z_recieved_distance_x += z_pos_increment;
+			z_recieved_distance_z -= z_pos_increment;
 
 			// a robot did actually respond
 			z_select_robot(z_recieved_id);
 		}
 		Zigbee = z_SLEEP; // fin s??quence Zigbee
+		Mode = SLEEP;
 		break;
 	}
 	}
@@ -1725,8 +1734,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 		CMDE = STOP;
 	} else {
 		CMDE = START;
-
-		// CMDE = PARK; // TODO : remove me
+		CMDE = start_cmde;
 	}
 	TOGGLE = ~TOGGLE;
 	New_CMDE = 1;
