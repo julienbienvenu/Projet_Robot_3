@@ -128,7 +128,8 @@ enum ETAT_SONAR {
 	S_ROTATION_M_90,
 	S_MES_M_90,
 	S_ROTATION_P_90,
-	S_MES_P_90
+	S_MES_P_90,
+	S_END
 }; // Mesure + 90
 enum ETAT_SONAR Etat_Sonar = S_IDLE;
 
@@ -1135,7 +1136,7 @@ void Gestion_Commandes(void) {
 		case PARK: {
 			Mode = is_PARK;
 			Etat_Sonar = S_START;
-			//Zigbee = z_REQUEST_ID; //déclaré dans Gestion_sonar()
+			// Zigbee = z_REQUEST_ID; //déclaré dans Gestion_sonar()
 
 			break;
 		}
@@ -1456,7 +1457,7 @@ void save_distance(uint32_t distance) {
 	}
 	case S_MES_P_90: {
 		distance_plus_90 = distance;
-		Etat_Sonar = S_IDLE;
+		Etat_Sonar = S_END;
 		cpt_sonar = 0;
 		break;
 	}
@@ -1487,10 +1488,6 @@ void Gestion_Sonar() {
 	switch (Etat_Sonar) {
 	case S_IDLE: {
 		__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_4, 2400);
-
-		if (Mode == is_PARK){
-			Zigbee = z_REQUEST_ID;
-		}
 		break;
 	}
 
@@ -1528,6 +1525,14 @@ void Gestion_Sonar() {
 		cpt_sonar = T_1_S;
 		Etat_Sonar = S_MES_P_90;
 		break;
+	}
+
+
+	case S_END: {
+		if (Mode == is_PARK) {
+			Zigbee = z_REQUEST_ID;
+		}
+		Etat_Sonar = S_IDLE;
 	}
 	}
 }
