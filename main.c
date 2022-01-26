@@ -163,7 +163,7 @@ volatile unsigned int
 	z_tempo;		  // the actual temporisation before sending the robot ID
 #define MAX_RAND 1000 // max tempo: 2 seconds
 #define z_pos_increment                                                        \
-	50 // the value by wich each robot should be espaced // TODO : set me
+	50 // the value by wich each robot should be espaced // TODO :??set me
 
 // xbee reception values
 uint8_t z_recieved_id;
@@ -1136,7 +1136,7 @@ void Gestion_Commandes(void) {
 		case PARK: {
 			Mode = is_PARK;
 			Etat_Sonar = S_START;
-			// Zigbee = z_REQUEST_ID; //déclaré dans Gestion_sonar()
+			// Zigbee = z_REQUEST_ID; //d??clar?? dans Gestion_sonar()
 
 			break;
 		}
@@ -1464,7 +1464,7 @@ void save_distance(uint32_t distance) {
 	}
 }
 
-// Détection sonar
+// D??tection sonar
 void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef* htim) {
 	if (htim->Channel == HAL_TIM_ACTIVE_CHANNEL_2) {
 		uint32_t distance = HAL_TIM_ReadCapturedValue(htim, TIM_CHANNEL_2);
@@ -1578,7 +1578,7 @@ void Gestion_Zigbee(int fromUARTInterrupt) {
 	}
 
 	case z_TRANSMIT_ID: {
-		z_sendID();			   // TODO : check me
+		z_sendID();			   // TODO :??check me
 		Zigbee = z_LISTEN_CMD; // on listen pour avoir pos
 		break;
 	}
@@ -1597,7 +1597,7 @@ void Gestion_Zigbee(int fromUARTInterrupt) {
 
 		z_request_id();
 		Zigbee = z_LISTEN_REQUEST_ID;
-		z_tempo = T_2000_MS * 4; // TODO : remove me
+		z_tempo = T_2000_MS * 4; // TODO :??remove me
 		break;
 	}
 
@@ -1725,8 +1725,9 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 		CMDE = STOP;
 	} else {
 		CMDE = START;
+		CMDE = PARK;
 
-		// CMDE = PARK; // TODO : remove me
+		// CMDE = PARK; // TODO??: remove me
 	}
 	TOGGLE = ~TOGGLE;
 	New_CMDE = 1;
